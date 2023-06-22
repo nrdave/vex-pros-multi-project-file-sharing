@@ -1,0 +1,26 @@
+define shared_asm_rule
+$(SHARED_BINDIR)/%.$1.o: $(SHARED_SRCDIR)/%.$1
+	$(VV)mkdir -p $$(dir $$@)
+	$$(call test_output_2,Compiled $$< ,$(AS) -c $(ASMFLAGS) -o $$@ $$<,$(OK_STRING))
+endef
+$(foreach asmext,$(ASMEXTS),$(eval $(call shared_asm_rule,$(asmext))))
+
+define shared_c_rule
+$(SHARED_BINDIR)/%.$1.o: $(SHARED_SRCDIR)/%.$1
+$(SHARED_BINDIR)/%.$1.o: $(SHARED_SRCDIR)/%.$1 $(SHARED_DEPDIR)/$(basename $1).d
+	$(VV)mkdir -p $$(dir $$@)
+	$(MAKESHAREDDEPFOLDER)
+	$$(call test_output_2,Compiled $$< ,$(CC) -c $(INCLUDE) -iquote"$(SHARED_INCDIR)/$$(dir $$*)" $(CFLAGS) $(EXTRA_CFLAGS) $(DEPFLAGS) -o $$@ $$<,$(OK_STRING))
+	$(RENAMESHAREDDEPENDENCYFILE)
+endef
+$(foreach cext,$(CEXTS),$(eval $(call shared_c_rule,$(cext))))
+
+define shared_cxx_rule
+$(SHARED_BINDIR)/%.$1.o: $(SHARED_SRCDIR)/%.$1
+$(SHARED_BINDIR)/%.$1.o: $(SHARED_SRCDIR)/%.$1 $(SHARED_DEPDIR)/$(basename %).d
+	$(VV)mkdir -p $$(dir $$@)
+	$(MAKESHAREDDEPFOLDER)
+	$$(call test_output_2,Compiled $$< ,$(CXX) -c $(INCLUDE) -iquote"$(SHARED_INCDIR)/$$(dir $$*)" $(CXXFLAGS) $(EXTRA_CXXFLAGS) $(DEPFLAGS) -o $$@ $$<,$(OK_STRING))
+	$(RENAMESHAREDDEPENDENCYFILE)
+endef
+$(foreach cxxext,$(CXXEXTS),$(eval $(call shared_cxx_rule,$(cxxext))))
