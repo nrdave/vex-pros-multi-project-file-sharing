@@ -12,12 +12,19 @@ BINDIR=$(ROOT)/bin
 SRCDIR=$(ROOT)/src
 INCDIR=$(ROOT)/include
 
-PARENT=..
-
-SHARED_INCDIR=$(PARENT)/common/include
-SHARED_BINDIR=$(PARENT)/common/bin
-SHARED_SRCDIR=$(PARENT)/common/src
-SHARED_DEPDIR:=$(PARENT)/common/.d
+#---------------------------------------------------------------------------------
+# The variable definitions for the shared directories. The Shared root declaration 
+# is a bit redundant, but it follows the style set by the PROS devs above.
+#---------------------------------------------------------------------------------
+SHARED_ROOT=../common
+SHARED_INCDIR=$(SHARED_ROOT)/include
+SHARED_BINDIR=$(SHARED_ROOT)/bin
+SHARED_SRCDIR=$(SHARED_ROOT)/src
+#------------------------------------------------------------------------------
+# I also chose to define the shared dependency directory here so you can change
+# it if so desired. The project dependecy directory is declared in common.mk
+#------------------------------------------------------------------------------
+SHARED_DEPDIR:=$(SHARED_ROOT)/.d
 $(shell mkdir -p $(SHARED_DEPDIR))
 
 WARNFLAGS+=

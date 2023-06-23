@@ -143,11 +143,18 @@ COBJ=$(addprefix $(BINDIR)/,$(patsubst $(SRCDIR)/%,%.o,$(call CSRC, $1)))
 CXXSRC=$(foreach cxxext,$(CXXEXTS),$(call rwildcard, $(SRCDIR),*.$(cxxext), $1))
 CXXOBJ=$(addprefix $(BINDIR)/,$(patsubst $(SRCDIR)/%,%.o,$(call CXXSRC,$1)))
 
-# Shared code blackmagic stuff
+#------------------------------------------------------------------------------
+# Defining various flags that are edits to the PROS-provided flags - used to change 
+# where dependency (.d) files are stored
+#------------------------------------------------------------------------------
 
 SHARED_DEPFLAGS = -MT $$@ -MMD -MP -MF $(SHARED_DEPDIR)/$$*.Td
 MAKESHAREDDEPFOLDER = -$(VV)mkdir -p $(SHARED_DEPDIR)/$$(dir $$(patsubst $(SHARED_BINDIR)/%, %, $$@))
 RENAMESHAREDDEPENDENCYFILE = -$(VV)mv -f $(SHARED_DEPDIR)/$$*.Td $$(patsubst $(SHARED_SRCDIR)/%, $(SHARED_DEPDIR)/%.d, $$<) && touch $$@
+
+#------------------------------------------------------------------------------
+# Defining the shared source and object files. Just copied from the project ones above
+#------------------------------------------------------------------------------
 
 SHARED_ASMSRC=$(foreach asmext,$(ASMEXTS),$(call rwildcard, $(SHARED_SRCDIR),*.$(asmext), $1))
 SHARED_ASMOBJ=$(addprefix $(SHARED_BINDIR)/,$(patsubst $(SHARED_SRCDIR)/%,%.o,$(call SHARED_ASMSRC,$1)))
@@ -156,7 +163,13 @@ SHARED_COBJ=$(addprefix $(SHARED_BINDIR)/,$(patsubst $(SHARED_SRCDIR)/%,%.o,$(ca
 SHARED_CXXSRC=$(foreach cxxext,$(CXXEXTS),$(call rwildcard, $(SHARED_SRCDIR),*.$(cxxext), $1))
 SHARED_CXXOBJ=$(addprefix $(SHARED_BINDIR)/,$(patsubst $(SHARED_SRCDIR)/%,%.o,$(call SHARED_CXXSRC,$1)))
 
+#------------------------------------------------------------------------------
+# This variable assignment was edited to include the shared object files
+#------------------------------------------------------------------------------
+
 GETALLOBJ=$(sort $(call ASMOBJ,$1) $(call COBJ,$1) $(call CXXOBJ,$1) $(call SHARED_ASMOBJ,$1) $(call SHARED_COBJ,$1) $(call SHARED_CXXOBJ,$1))
+
+#------------------------------------------------------------------------------
 
 ARCHIVE_TEXT_LIST=$(subst $(SPACE),$(COMMA),$(notdir $(basename $(LIBRARIES))))
 
@@ -192,8 +205,13 @@ clean:
 	@echo Cleaning project
 	-$Drm -rf $(BINDIR)
 	-$Drm -rf $(DEPDIR)
+#------------------------------------------------------------------------------
+# clean removes shared object, dependency files
+#------------------------------------------------------------------------------
 	-$Drm -rf $(SHARED_BINDIR)
 	-$Drm -rf $(SHARED_DEPDIR)
+
+#------------------------------------------------------------------------------
 
 ifeq ($(IS_LIBRARY),1)
 ifeq ($(LIBNAME),libbest)
@@ -227,7 +245,11 @@ else
 ELF_DEPS+=$(call GETALLOBJ,$(EXCLUDE_SRCDIRS))
 endif
 
+#------------------------------------------------------------------------------
+# Added the shared binary directory to the dependencies
+#-----------------------------------------------------------------------------
 $(MONOLITH_BIN): $(MONOLITH_ELF) $(BINDIR) $(SHARED_BINDIR)
+#------------------------------------------------------------------------------
 	$(call test_output_2,Creating $@ for $(DEVICE) ,$(OBJCOPY) $< -O binary -R .hot_init $@,$(DONE_STRING))
 
 $(MONOLITH_ELF): $(ELF_DEPS) $(LIBRARIES)
@@ -255,8 +277,9 @@ $(HOT_ELF): $(COLD_ELF) $(ELF_DEPS)
 	@printf "%s\n" "Section sizes:"
 	-$(VV)$(SIZETOOL) $(SIZEFLAGS) $@ $(SIZES_SED) $(SIZES_NUMFMT)
 
-# PROS-Provided rules
-
+#------------------------------------------------------------------------------
+# PROS-Provided rules for compilation
+#------------------------------------------------------------------------------
 define asm_rule
 $(BINDIR)/%.$1.o: $(SRCDIR)/%.$1
 	$(VV)mkdir -p $$(dir $$@)
@@ -284,7 +307,9 @@ $(BINDIR)/%.$1.o: $(SRCDIR)/%.$1 $(DEPDIR)/$(basename %).d
 endef
 $(foreach cxxext,$(CXXEXTS),$(eval $(call cxx_rule,$(cxxext))))
 
-# Added rules for common directory
+#------------------------------------------------------------------------------
+# Rules added by me for compilation of shared files
+#------------------------------------------------------------------------------
 
 define shared_asm_rule
 $(SHARED_BINDIR)/%.$1.o: $(SHARED_SRCDIR)/%.$1
@@ -313,6 +338,8 @@ $(SHARED_BINDIR)/%.$1.o: $(SHARED_SRCDIR)/%.$1 $(DEPDIR)/$(basename $1).d
 endef
 $(foreach cxxext,$(CXXEXTS),$(eval $(call shared_cxx_rule,$(cxxext))))
 
+#-----------------------------------------------------------------------------------------------------------
+
 define _pros_ld_timestamp
 $(VV)mkdir -p $(dir $(LDTIMEOBJ))
 @# Pipe a line of code defining _PROS_COMPILE_TOOLSTAMP and _PROS_COMPILE_DIRECTORY into GCC,
@@ -339,4 +366,7 @@ $(DEPDIR)/%.d: ;
 .PRECIOUS: $(DEPDIR)/%.d
 
 include $(wildcard $(patsubst $(SRCDIR)/%,$(DEPDIR)/%.d,$(CSRC) $(CXXSRC)))
+#------------------------------------------------------------------------------
+# Include shared dependencies
+#------------------------------------------------------------------------------
 include $(wildcard $(patsubst $(SHARED_SRCDIR)/%,$(SHARED_DEPDIR)/%.d,$(SHARED_CSRC) $(SHARED_CXXSRC)))
