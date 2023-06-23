@@ -8,6 +8,8 @@ The source and header files in the common directory are included in the compilat
 
 This repo contains sample C and C++ source and header files: test.c and test.h for C, and test.cpp and test.hpp for C++.
 
+**I HAVE NO CLUE IF THE CODE ACTUALLY WORKS. ALL I KNOW IS THAT IT COMPILES.**
+
 ## Rationale
 
 As a VEX U competitor (at the time of publishing this repo) I've run into the issue of sharing code across the 2 robots my team built, but not always transferring fixes done on one robot's code to the other robot.
